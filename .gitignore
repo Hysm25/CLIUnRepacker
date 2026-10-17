@@ -1,0 +1,55 @@
+# =========================================================================
+# CLIUnRepacker .gitignore
+# Strictly exclude copyrighted game data, archives, proprietary installers,
+# third-party binaries, and build artifacts.
+# =========================================================================
+
+# Repack Archives & Game Assets
+*.bin
+fg-*.bin
+*.iso
+*.pak
+*.arc
+*.rar
+*.zip
+*.7z
+*.tar
+*.tar.gz
+*.tar.xz
+*.bmp
+*.rtf
+*.isl
+
+# Proprietary / Original Installers & Third-Party Binaries
+setup.exe
+Setup.exe
+*.exe
+*.dll
+*.sys
+QuickSFV.EXE
+QuickSFV.exe
+MD5/
+Verify BIN files before installation.bat
+
+# Reverse-engineering / Extracted Payloads & Extraction Targets
+embedded/
+unpacked_game/
+temp/
+tmp/
+
+# Compiled Application Binaries & Releases
+fitgirl-cli
+fitgirl-cli.exe
+cliunrepacker
+dist/
+
+# OS, IDE, and Environment Artifacts
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*.log
+.idea/
+.vscode/
+.gemini/
+.system_generated/
