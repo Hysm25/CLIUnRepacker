@@ -31,7 +31,6 @@ func VerifyMD5List(entries []MD5Entry, baseDir string) (int, int, []string) {
 			continue
 		}
 
-		fmt.Printf("  %s[•] %s (%s)%s\n", ui.Blue, prefix, ui.FormatBytes(stat.Size()), ui.Reset)
 		actualHash, err := CalculateMD5WithProgress(target, 4*1024*1024)
 		if err != nil {
 			failed++
@@ -43,7 +42,7 @@ func VerifyMD5List(entries []MD5Entry, baseDir string) (int, int, []string) {
 
 		if strings.EqualFold(actualHash, entry.ExpectedHash) {
 			passed++
-			fmt.Printf("  %s[✓] %s - Verified OK%s\n", ui.Green, prefix, ui.Reset)
+			fmt.Printf("  %s[✓] %s (%s) - OK%s\n", ui.Green, prefix, ui.FormatBytes(stat.Size()), ui.Reset)
 		} else {
 			failed++
 			msg := fmt.Sprintf("MISMATCH: %s (got %s, expected %s)", entry.RelPath, actualHash, entry.ExpectedHash)

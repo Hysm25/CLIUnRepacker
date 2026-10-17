@@ -4,9 +4,9 @@ import (
 	"bufio"
 	"crypto/md5"
 	"encoding/hex"
-	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -90,46 +90,24 @@ func CalculateMD5WithProgress(filePath string, chunkSize int64) (string, error) 
 			hasher.Write(buf[:n])
 			bytesRead += int64(n)
 
-			pct := 100.0
-			if totalSize > 0 {
-				pct = float64(bytesRead) / float64(totalSize) * 100.0
-			}
-
 			elapsed := time.Since(tStart).Seconds()
 			speed := 0.0
 			if elapsed > 0 {
 				speed = (float64(bytesRead) / (1024 * 1024)) / elapsed
 			}
 
-			barWidth := 30
-			filled := barWidth
-			if totalSize > 0 {
-				filled = int(int64(barWidth) * bytesRead / totalSize)
-			}
-			if filled > barWidth {
-				filled = barWidth
-			}
-			bar := strings.Repeat("█", filled) + strings.Repeat("░", barWidth-filled)
-
-			status := fmt.Sprintf("\r  %s[%s]%s %5.1f%% (%s / %s) %s%6.1f MB/s%s",
-				ui.Cyan, bar, ui.Reset,
-				pct,
-				ui.FormatBytes(bytesRead),
-				ui.FormatBytes(totalSize),
-				ui.Yellow, speed, ui.Reset,
-			)
-			os.Stdout.WriteString(status)
+			ui.RenderProgressBar(filepath.Base(filePath), bytesRead, totalSize, speed)
 		}
 
 		if readErr == io.EOF {
 			break
 		}
 		if readErr != nil {
-			os.Stdout.WriteString("\r" + strings.Repeat(" ", 80) + "\r")
+			ui.ClearProgressBar()
 			return "", readErr
 		}
 	}
 
-	os.Stdout.WriteString("\r" + strings.Repeat(" ", 80) + "\r")
+	ui.ClearProgressBar()
 	return hex.EncodeToString(hasher.Sum(nil)), nil
 }

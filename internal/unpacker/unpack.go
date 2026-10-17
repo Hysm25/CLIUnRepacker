@@ -7,7 +7,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"strings"
 	"time"
 
 	"cliunrepacker/internal/system"
@@ -17,11 +16,11 @@ import (
 
 // UnpackRepack executes headless extraction with live status tracking
 func UnpackRepack(repackDir string, outDir string, components string, verifyAfter bool) {
-	ui.PrintHeader("Headless Repack Unpacking")
+	ui.PrintHeader("Repack Unpacker")
 
 	setupExe := filepath.Join(repackDir, "setup.exe")
 	if _, err := os.Stat(setupExe); os.IsNotExist(err) {
-		fmt.Printf("%s[!] 'setup.exe' not found in '%s'.%s\n", ui.Red, repackDir, ui.Reset)
+		fmt.Printf("  %s[!] 'setup.exe' was not found in '%s'%s\n", ui.Red, repackDir, ui.Reset)
 		return
 	}
 
@@ -31,7 +30,7 @@ func UnpackRepack(repackDir string, outDir string, components string, verifyAfte
 	}
 
 	if err := os.MkdirAll(absOutDir, 0755); err != nil {
-		fmt.Printf("%s[!] Failed to create output directory '%s': %v%s\n", ui.Red, absOutDir, err, ui.Reset)
+		fmt.Printf("  %s[!] Failed to create output directory '%s': %v%s\n", ui.Red, absOutDir, err, ui.Reset)
 		return
 	}
 
@@ -39,15 +38,15 @@ func UnpackRepack(repackDir string, outDir string, components string, verifyAfte
 		components = "text"
 	}
 
-	fmt.Printf("%sRepack Directory:%s %s\n", ui.Bold, ui.Reset, repackDir)
-	fmt.Printf("%sOutput Directory:%s %s\n", ui.Bold, ui.Reset, absOutDir)
-	fmt.Printf("%sComponents:%s       %s (isolates game payload, skipping redistributable downloads)\n", ui.Bold, ui.Reset, components)
+	fmt.Printf("  %sRepack Directory:%s %s\n", ui.Dim, ui.Reset, repackDir)
+	fmt.Printf("  %sDestination:%s      %s\n", ui.Dim, ui.Reset, absOutDir)
+	fmt.Printf("  %sComponents:%s       %s (isolating core game files, skipping web redists)\n", ui.Dim, ui.Reset, components)
 
 	// Check free disk space
 	if freeSpace, err := system.GetFreeDiskSpace(absOutDir); err == nil {
-		fmt.Printf("%sFree Disk Space:%s  %s\n", ui.Bold, ui.Reset, ui.FormatBytes(int64(freeSpace)))
+		fmt.Printf("  %sAvailable Disk:%s   %s\n", ui.Dim, ui.Reset, ui.FormatBytes(int64(freeSpace)))
 		if freeSpace < 5*1024*1024*1024 {
-			fmt.Printf("%s[!] Warning: Less than 5 GB free space available. Decompression may require more room.%s\n", ui.Yellow, ui.Reset)
+			fmt.Printf("  %s[!] Warning: Less than 5 GB free disk space available.%s\n", ui.Yellow, ui.Reset)
 		}
 	}
 
@@ -65,8 +64,8 @@ func UnpackRepack(repackDir string, outDir string, components string, verifyAfte
 	} else {
 		wineBin, err := exec.LookPath("wine")
 		if err != nil {
-			fmt.Printf("\n%s[!] Error: 'wine' is required to run the decompression pipeline on %s.%s\n", ui.Red, runtime.GOOS, ui.Reset)
-			fmt.Println("Please install Wine via your package manager before running extraction.")
+			fmt.Printf("\n  %s[!] Error: 'wine' is required to run the decompression pipeline on %s.%s\n", ui.Red, runtime.GOOS, ui.Reset)
+			fmt.Println("  Please install Wine via your package manager before running extraction.")
 			return
 		}
 
@@ -86,18 +85,16 @@ func UnpackRepack(repackDir string, outDir string, components string, verifyAfte
 
 	cmd.Dir = repackDir
 
-	fmt.Printf("\n%sLaunching headless extraction process...%s\n", ui.Cyan, ui.Reset)
+	fmt.Printf("\n  %sLaunching decompression pipeline (FreeArc / SREP / LOLZ)...%s\n\n", ui.Cyan, ui.Reset)
 	tStart := time.Now()
 
 	if err := cmd.Start(); err != nil {
-		fmt.Printf("%s[!] Failed to launch unpacker: %v%s\n", ui.Red, err, ui.Reset)
+		fmt.Printf("  %s[!] Failed to launch unpacker: %v%s\n", ui.Red, err, ui.Reset)
 		return
 	}
 
 	spinner := []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
 	spinIdx := 0
-
-	fmt.Printf("%sUnpacking is running in background (FreeArc / SREP / LOLZ active)...%s\n", ui.Dim, ui.Reset)
 
 	// Channel to signal process completion
 	done := make(chan error, 1)
@@ -105,7 +102,7 @@ func UnpackRepack(repackDir string, outDir string, components string, verifyAfte
 		done <- cmd.Wait()
 	}()
 
-	ticker := time.NewTicker(500 * time.Millisecond)
+	ticker := time.NewTicker(400 * time.Millisecond)
 	defer ticker.Stop()
 
 	var procErr error
@@ -139,17 +136,18 @@ func UnpackRepack(repackDir string, outDir string, components string, verifyAfte
 				ui.White, fileCount, ui.Reset,
 				ui.FormatBytes(writtenBytes),
 			)
+			ui.ClearLine()
 			os.Stdout.WriteString(status)
 		}
 	}
 
-	os.Stdout.WriteString("\r" + strings.Repeat(" ", 80) + "\r")
+	ui.ClearLine()
 	totalDuration := time.Since(tStart).Seconds()
 
 	if procErr == nil {
-		fmt.Printf("%s[✓] Repack unpacking completed successfully in %s!%s\n", ui.Green, ui.FormatSeconds(totalDuration), ui.Reset)
+		fmt.Printf("  %s[✓] Unpacking completed successfully in %s!%s\n", ui.Green, ui.FormatSeconds(totalDuration), ui.Reset)
 	} else {
-		fmt.Printf("%s[!] Installer process exited with error: %v (%s elapsed).%s\n", ui.Yellow, procErr, ui.FormatSeconds(totalDuration), ui.Reset)
+		fmt.Printf("  %s[!] Installer process exited: %v (%s elapsed)%s\n", ui.Yellow, procErr, ui.FormatSeconds(totalDuration), ui.Reset)
 	}
 
 	// Post-unpack verification if requested
@@ -167,10 +165,10 @@ func UnpackRepack(repackDir string, outDir string, components string, verifyAfte
 		}
 
 		if foundMD5 != "" {
-			fmt.Printf("\nFound verification reference: %s%s%s\n", ui.Cyan, filepath.Base(foundMD5), ui.Reset)
+			fmt.Printf("\n  %sFound post-install checksum file:%s %s\n", ui.Dim, ui.Reset, filepath.Base(foundMD5))
 			verifier.VerifyInstallation(absOutDir, foundMD5)
 		} else {
-			fmt.Printf("\n%sNote: No 'fitgirl.md5' file detected in output directory.%s\n", ui.Dim, ui.Reset)
+			fmt.Printf("\n  %sNote: No 'fitgirl.md5' file detected in output directory for post-verification.%s\n", ui.Dim, ui.Reset)
 		}
 	}
 }

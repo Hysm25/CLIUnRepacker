@@ -91,17 +91,15 @@ fitgirl-cli.exe
 # Or double-click fitgirl-cli.bat
 ```
 
-The interactive wizard faithfully reproduces the visual appearance and interaction sequence of the original Inno Setup installer directly inside your terminal:
+The interactive interface provides a clean, responsive, and intuitive terminal menu:
 
-* **Language Selection**: Choose installer language (`English`, `Russian`).
-* **Welcome Screen**: Repack header with original banner art, system diagnostics, and low-RAM limiter (`[x] Limit installer to 2GB of RAM usage`).
-* **Information Notice**: FitGirl release notes and repacking details.
-* **Destination Location**: Interactive destination folder selection with real-time available disk space calculation.
-* **Components Selection**: Select optional components (`[x] Main game files`, `[ ] DirectX`, `[ ] C++ Redistributable`).
-* **Additional Tasks**: Toggle desktop shortcuts, Start Menu folder options, and post-installation MD5 verification.
-* **Ready to Install**: Comprehensive summary review before starting extraction.
-* **Installer Progress & Verification**: Real-time extraction with progress bars and automatic QuickSFV/MD5 verification.
-* **Quick Tools & Diagnostics**: Access pre-install BIN verification, metadata inspection, and system checks directly from the wizard navigation.
+* **Header & Repack Status**: Dynamic terminal width detection with aligned repack metadata, archive sizes, and environment diagnostics.
+* **Unpack Repack**: Streamlined unpack setup with destination path, free disk calculation, automatic 2GB low-memory recommendation, and post-installation verification toggle.
+* **Verify BIN Files**: Real-time adaptive single-line progress bar with byte tracking, percentage, and read speed (`MB/s`).
+* **Verify Installed Game**: Check integrity of extracted game files against `fitgirl.md5`.
+* **Inspect Repack**: Instant view of installer executable, archive split sizes, and Inno Setup container details.
+* **System Diagnostics**: Check host memory, Wine status, innoextract availability, and available storage.
+* **Change Directory**: Seamlessly switch between repack folders.
 
 ---
 

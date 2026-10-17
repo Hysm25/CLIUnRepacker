@@ -28,8 +28,38 @@ func PromptInput(promptText string, defaultVal string) string {
 	return line
 }
 
-// Pause waits for the user to press Enter before continuing
+// PromptConfirm prompts the user with a Yes/No question
+func PromptConfirm(promptText string, defaultYes bool) bool {
+	hint := "Y/n"
+	if !defaultYes {
+		hint = "y/N"
+	}
+	fmt.Printf("%s%s%s [%s%s%s]: ", Bold, promptText, Reset, Cyan, hint, Reset)
+
+	line, err := reader.ReadString('\n')
+	if err != nil {
+		return defaultYes
+	}
+	line = strings.ToLower(strings.TrimSpace(line))
+	if line == "" {
+		return defaultYes
+	}
+	if line == "y" || line == "yes" {
+		return true
+	}
+	if line == "n" || line == "no" {
+		return false
+	}
+	return defaultYes
+}
+
+// Pause waits for the user to press Enter to continue
 func Pause() {
-	fmt.Printf("\n%sPress Enter to return to main menu...%s", Dim, Reset)
+	PauseMessage("Press Enter to continue...")
+}
+
+// PauseMessage displays a custom pause message and waits for Enter
+func PauseMessage(msg string) {
+	fmt.Printf("\n%s%s%s", Dim, msg, Reset)
 	_, _ = reader.ReadString('\n')
 }

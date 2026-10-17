@@ -2,71 +2,40 @@ package ui
 
 import (
 	"fmt"
-	"math"
 	"strings"
 )
 
-// PrintBanner displays the authentic FitGirl Repacks Inno Setup installer banner
+// PrintBanner prints a clean, modern, minimalist header
 func PrintBanner() {
-	banner := fmt.Sprintf(`%s%s┌─ Setup - FitGirl Repack Installer ──────────────────── [ _ ] [ □ ] [ ✕ ] ─┐
-│                                                                           │
-│   %s███████╗██╗████████╗ ██████╗ ██╗██████╗ ██╗%s                             │
-│   %s██╔════╝██║╚══██╔══╝██╔════╝ ██║██╔══██╗██║%s      %sREPACKS%s                │
-│   %s█████╗  ██║   ██║   ██║  ███╗██║██████╔╝██║%s      %shttp://fitgirl-repacks.site%s
-│   %s██╔══╝  ██║   ██║   ██║   ██║██║██╔══██╗██║%s      %sInno Setup Enhanced 5.5%s  │
-│   %s██║     ██║   ██║   ╚██████╔╝██║██║  ██║███████╗%s  %s(100%% Lossless Repack)%s   │
-│   %s╚═╝     ╚═╝   ╚═╝    ╚═════╝ ╚═╝╚═╝  ╚═╝╚══════╝%s                         │
-│                                                                           │
-└───────────────────────────────────────────────────────────────────────────┘%s`,
-		Bold, Blue,
-		Magenta, Blue,
-		Magenta, Blue, Bold, Blue,
-		Magenta, Blue, Cyan, Blue,
-		Magenta, Blue, White, Blue,
-		Magenta, Blue, Dim, Blue,
-		Magenta, Blue,
-		Reset,
-	)
-	fmt.Println(banner)
+	w := TerminalWidth()
+	fmt.Printf("\n%s%sCLIUnRepacker%s  %sv1.0.0%s\n", Bold, Cyan, Reset, Dim, Reset)
+	fmt.Printf("%sCross-Platform FitGirl Repack Inspector & Unpacker%s\n", Dim, Reset)
+	fmt.Println(Dim + strings.Repeat("─", w) + Reset)
 }
 
-// PrintHeader displays an Inno Setup styled section header
-func PrintHeader(title string) {
-	dashes := WindowWidth - 8 - len(title)
-	if dashes < 2 {
-		dashes = 2
+// PrintRepackSummary displays an aligned summary of the detected repack in repackDir
+func PrintRepackSummary(meta RepackMeta, repackDir string) {
+	w := TerminalWidth()
+	appName := meta.AppName
+	if appName == "" {
+		appName = "FitGirl Repack"
 	}
-	fmt.Printf("\n%s%s┌─ [ %s ] %s┐%s\n\n", Bold, Blue, title, strings.Repeat("─", dashes), Reset)
-}
 
-// FormatBytes formats byte sizes into human-readable strings (e.g. 1.25 GB)
-func FormatBytes(numBytes int64) string {
-	if numBytes < 0 {
-		return "0 B"
-	}
-	units := []string{"B", "KB", "MB", "GB", "TB", "PB"}
-	val := float64(numBytes)
-	for _, unit := range units {
-		if math.Abs(val) < 1024.0 || unit == "PB" {
-			return fmt.Sprintf("%.2f %s", val, unit)
+	fmt.Printf("  %sRepack:%s    %s%s%s\n", Dim, Reset, Bold, appName, Reset)
+	fmt.Printf("  %sDirectory:%s %s\n", Dim, Reset, repackDir)
+
+	if len(meta.Archives) > 0 {
+		var totalSize int64
+		var names []string
+		for _, a := range meta.Archives {
+			totalSize += a.Size
+			names = append(names, fmt.Sprintf("%s (%s)", a.Name, FormatBytes(a.Size)))
 		}
-		val /= 1024.0
+		fmt.Printf("  %sArchives:%s  %d files, %s total [%s]\n",
+			Dim, Reset, len(meta.Archives), FormatBytes(totalSize), strings.Join(names, ", "))
+	} else {
+		fmt.Printf("  %sArchives:%s  %sNo fg-*.bin archives detected in directory%s\n", Dim, Reset, Yellow, Reset)
 	}
-	return fmt.Sprintf("%.2f PB", val)
-}
 
-// FormatSeconds formats seconds into MM:SS or HH:MM:SS
-func FormatSeconds(seconds float64) string {
-	totalSecs := int64(seconds)
-	if totalSecs < 0 {
-		totalSecs = 0
-	}
-	secs := totalSecs % 60
-	mins := (totalSecs / 60) % 60
-	hours := totalSecs / 3600
-
-	if hours > 0 {
-		return fmt.Sprintf("%02d:%02d:%02d", hours, mins, secs)
-	}
-	return fmt.Sprintf("%02d:%02d", mins, secs)
+	fmt.Println(Dim + strings.Repeat("─", w) + Reset)
 }

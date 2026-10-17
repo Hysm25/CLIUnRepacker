@@ -34,8 +34,8 @@ Run 'fitgirl-cli [command] --help' for options specific to a command.
 	fmt.Print(helpText)
 }
 
-func defaultWizardHandlers() ui.WizardHandlers {
-	return ui.WizardHandlers{
+func defaultMenuHandlers() ui.MenuHandlers {
+	return ui.MenuHandlers{
 		InspectRepack:      unpacker.InspectRepack,
 		VerifyBins:         verifier.VerifyBins,
 		UnpackRepack:       unpacker.UnpackRepack,
@@ -45,7 +45,7 @@ func defaultWizardHandlers() ui.WizardHandlers {
 
 func main() {
 	if len(os.Args) <= 1 {
-		ui.RunInstallerWizard(".", defaultWizardHandlers())
+		ui.RunInteractiveMenu(".", defaultMenuHandlers())
 		return
 	}
 
@@ -53,7 +53,7 @@ func main() {
 
 	switch command {
 	case "menu", "wizard":
-		ui.RunInstallerWizard(".", defaultWizardHandlers())
+		ui.RunInteractiveMenu(".", defaultMenuHandlers())
 
 	case "check":
 		info := system.RunSystemCheck()
