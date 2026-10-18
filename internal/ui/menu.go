@@ -13,7 +13,7 @@ import (
 type MenuHandlers struct {
 	InspectRepack      func(repackDir string)
 	VerifyBins         func(repackDir string)
-	UnpackRepack       func(repackDir string, outDir string, components string, verifyAfter bool)
+	UnpackRepack       func(repackDir string, outDir string, components string, limitRAM bool, verifyAfter bool)
 	VerifyInstallation func(targetDir string, md5Path string)
 }
 
@@ -143,7 +143,7 @@ func promptUnpack(repackDir string, meta RepackMeta, handlers MenuHandlers) {
 		action := strings.ToLower(PromptInput("Choice", ""))
 
 		if action == "" || action == "y" || action == "yes" || action == "start" {
-			handlers.UnpackRepack(repackDir, outDir, components, postVerify)
+			handlers.UnpackRepack(repackDir, outDir, components, limitRAM, postVerify)
 			Pause()
 			return
 		} else if action == "c" {
@@ -177,10 +177,18 @@ func showSystemDiagnostics(repackDir string) {
 	}
 
 	if sysInfo.Innoextract != "" {
-		fmt.Printf("  %sInnoextract Tool:%s   %s%s%s (Available)\n", Dim, Reset, Green, sysInfo.Innoextract, Reset)
+		fmt.Printf("  %sInnoextract Tool:%s   %s%s%s (Available - Native Linux Extraction)\n", Dim, Reset, Green, sysInfo.Innoextract, Reset)
 	} else {
 		fmt.Printf("  %sInnoextract Tool:%s   %sNot found%s (Optional for container inspection)\n",
 			Dim, Reset, Dim, Reset)
+	}
+
+	if sysInfo.REA != "" {
+		fmt.Printf("  %sREA Assistant:%s      %s%s%s (Available - Reverse Engineering)\n", Dim, Reset, Green, sysInfo.REA, Reset)
+	}
+
+	if sysInfo.Prlimit != "" {
+		fmt.Printf("  %sMemory Enforcer:%s    %s%s%s (Available for 2GB RAM Limit)\n", Dim, Reset, Green, sysInfo.Prlimit, Reset)
 	}
 
 	if freeSpace, err := system.GetFreeDiskSpace(repackDir); err == nil {

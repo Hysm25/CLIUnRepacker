@@ -11,8 +11,10 @@ import (
 type SysInfo struct {
 	OS          string  `json:"os"`
 	Arch        string  `json:"arch"`
-	Innoextract string  `json:"innoextract"`
-	Wine        string  `json:"wine"`
+	Innoextract string  `json:"innoextract,omitempty"`
+	Wine        string  `json:"wine,omitempty"`
+	REA         string  `json:"rea,omitempty"`
+	Prlimit     string  `json:"prlimit,omitempty"`
 	MemTotalGB  float64 `json:"mem_total_gb"`
 	MemAvailGB  float64 `json:"mem_avail_gb"`
 }
@@ -36,6 +38,24 @@ func RunSystemCheck() SysInfo {
 				info.Innoextract = localInno
 			}
 		}
+	}
+
+	// Find REA (Reverse Engineering Assistant)
+	if p, err := exec.LookPath("rea"); err == nil {
+		info.REA = p
+	} else {
+		home, err := os.UserHomeDir()
+		if err == nil {
+			localREA := filepath.Join(home, ".local", "bin", "rea")
+			if _, err := os.Stat(localREA); err == nil {
+				info.REA = localREA
+			}
+		}
+	}
+
+	// Find prlimit for memory limit enforcement on Linux
+	if p, err := exec.LookPath("prlimit"); err == nil {
+		info.Prlimit = p
 	}
 
 	// Find wine if not Windows

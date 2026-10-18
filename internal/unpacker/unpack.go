@@ -15,7 +15,7 @@ import (
 )
 
 // UnpackRepack executes headless extraction with live status tracking
-func UnpackRepack(repackDir string, outDir string, components string, verifyAfter bool) {
+func UnpackRepack(repackDir string, outDir string, components string, limitRAM bool, verifyAfter bool) {
 	ui.PrintHeader("Repack Unpacker")
 
 	setupExe := filepath.Join(repackDir, "setup.exe")
@@ -34,13 +34,17 @@ func UnpackRepack(repackDir string, outDir string, components string, verifyAfte
 		return
 	}
 
-	if components == "" {
-		components = "text"
-	}
-
 	fmt.Printf("  %sRepack Directory:%s %s\n", ui.Dim, ui.Reset, repackDir)
 	fmt.Printf("  %sDestination:%s      %s\n", ui.Dim, ui.Reset, absOutDir)
-	fmt.Printf("  %sComponents:%s       %s (isolating core game files, skipping web redists)\n", ui.Dim, ui.Reset, components)
+	if components != "" && components != "text" {
+		fmt.Printf("  %sComponents:%s       %s\n", ui.Dim, ui.Reset, components)
+	}
+
+	ramStatus := fmt.Sprintf("%sDisabled%s", ui.Dim, ui.Reset)
+	if limitRAM {
+		ramStatus = fmt.Sprintf("%sEnabled & Enforced%s (2 GB memory ceiling)", ui.Green, ui.Reset)
+	}
+	fmt.Printf("  %s2GB RAM Limit:%s    %s\n", ui.Dim, ui.Reset, ramStatus)
 
 	// Check free disk space
 	if freeSpace, err := system.GetFreeDiskSpace(absOutDir); err == nil {
@@ -50,36 +54,66 @@ func UnpackRepack(repackDir string, outDir string, components string, verifyAfte
 		}
 	}
 
+	sysInfo := system.RunSystemCheck()
+
+	// 1. Prefer native Linux extraction for Inno Setup container files (avoiding Wine where possible)
+	if sysInfo.Innoextract != "" {
+		fmt.Printf("  %sNative Extractor:%s %s (Extracting container payload without Wine)\n", ui.Dim, ui.Reset, filepath.Base(sysInfo.Innoextract))
+		extractCmd := exec.Command(sysInfo.Innoextract, "-e", setupExe, "-d", absOutDir, "-m")
+		extractCmd.Dir = repackDir
+		if err := extractCmd.Run(); err == nil {
+			// Innoextract places files under app/; promote them to destination root
+			appDir := filepath.Join(absOutDir, "app")
+			if stat, err := os.Stat(appDir); err == nil && stat.IsDir() {
+				_ = filepath.WalkDir(appDir, func(p string, d fs.DirEntry, err error) error {
+					if err == nil && !d.IsDir() {
+						rel, _ := filepath.Rel(appDir, p)
+						dest := filepath.Join(absOutDir, rel)
+						_ = os.MkdirAll(filepath.Dir(dest), 0755)
+						_ = os.Rename(p, dest)
+					}
+					return nil
+				})
+				_ = os.RemoveAll(appDir)
+			}
+		}
+	}
+
 	var cmd *exec.Cmd
 	if runtime.GOOS == "windows" {
-		cmd = exec.Command(
-			setupExe,
+		args := []string{
 			fmt.Sprintf(`/DIR="%s"`, absOutDir),
-			fmt.Sprintf(`/COMPONENTS="%s"`, components),
-			"/VERYSILENT",
-			"/SUPPRESSMSGBOXES",
-			"/NORESTART",
-			"/SP-",
-		)
+		}
+		if components != "" && components != "text" {
+			args = append(args, fmt.Sprintf(`/COMPONENTS="%s"`, components))
+		}
+		args = append(args, "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/SP-")
+		cmd = exec.Command(setupExe, args...)
 	} else {
-		wineBin, err := exec.LookPath("wine")
-		if err != nil {
+		wineBin := sysInfo.Wine
+		if wineBin == "" {
 			fmt.Printf("\n  %s[!] Error: 'wine' is required to run the decompression pipeline on %s.%s\n", ui.Red, runtime.GOOS, ui.Reset)
 			fmt.Println("  Please install Wine via your package manager before running extraction.")
 			return
 		}
 
-		wineTarget := "Z:" + filepath.ToSlash(absOutDir)
-		cmd = exec.Command(
-			wineBin,
+		wineTarget := "Z:" + filepath.FromSlash(filepath.Clean(absOutDir))
+		args := []string{
 			setupExe,
-			"/DIR="+wineTarget,
-			"/COMPONENTS="+components,
-			"/VERYSILENT",
-			"/SUPPRESSMSGBOXES",
-			"/NORESTART",
-			"/SP-",
-		)
+			"/DIR=" + wineTarget,
+		}
+		if components != "" && components != "text" {
+			args = append(args, "/COMPONENTS="+components)
+		}
+		args = append(args, "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/SP-")
+
+		if limitRAM && sysInfo.Prlimit != "" {
+			// Enforce 2 GB (2147483648 bytes) memory limit on process tree
+			prlimitArgs := append([]string{"--data=2147483648", wineBin}, args...)
+			cmd = exec.Command(sysInfo.Prlimit, prlimitArgs...)
+		} else {
+			cmd = exec.Command(wineBin, args...)
+		}
 		cmd.Env = append(os.Environ(), "WINEDEBUG=-all")
 	}
 

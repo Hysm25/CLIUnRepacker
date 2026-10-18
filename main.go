@@ -82,7 +82,8 @@ func main() {
 		var output string
 		fs.StringVar(&output, "output", "", "Destination directory for unpacked files")
 		fs.StringVar(&output, "o", "", "Destination directory for unpacked files (shorthand)")
-		components := fs.String("components", "text", "Inno Setup components to install (default: 'text')")
+		components := fs.String("components", "", "Inno Setup components to install (optional)")
+		limitRAM := fs.Bool("limit-ram", true, "Enable and enforce 2 GB RAM limit during extraction (default: true)")
 		verify := fs.Bool("verify", false, "Automatically verify files after unpacking")
 
 		_ = fs.Parse(os.Args[2:])
@@ -95,7 +96,7 @@ func main() {
 
 		absDir, _ := filepath.Abs(*dir)
 		absOut, _ := filepath.Abs(output)
-		unpacker.UnpackRepack(absDir, absOut, *components, *verify)
+		unpacker.UnpackRepack(absDir, absOut, *components, *limitRAM, *verify)
 
 	case "verify":
 		fs := flag.NewFlagSet("verify", flag.ExitOnError)
