@@ -92,8 +92,15 @@ func UnpackRepack(repackDir string, outDir string, components string, limitRAM b
 	} else {
 		wineBin := sysInfo.Wine
 		if wineBin == "" {
-			fmt.Printf("\n  %s[!] Error: 'wine' is required to run the decompression pipeline on %s.%s\n", ui.Red, runtime.GOOS, ui.Reset)
-			fmt.Println("  Please install Wine via your package manager before running extraction.")
+			if sysInfo.IsTermux || sysInfo.IsAndroid {
+				fmt.Printf("\n  %s[!] Error: 'wine' (with x86 translation) is required to run Windows decompressors on ARM64 Android.%s\n", ui.Red, ui.Reset)
+				fmt.Println("  Repack container inspection, native container extraction ('innoextract'), and")
+				fmt.Println("  checksum verifications ('verify-bins', 'verify') run 100% natively in Termux.")
+				fmt.Println("  For the FreeArc LOLZ/Razor decompression pipeline, use Box64 + Wine via PRoot-Distro, Mobox, or Winlator.")
+			} else {
+				fmt.Printf("\n  %s[!] Error: 'wine' is required to run the decompression pipeline on %s.%s\n", ui.Red, runtime.GOOS, ui.Reset)
+				fmt.Println("  Please install Wine via your package manager before running extraction.")
+			}
 			return
 		}
 

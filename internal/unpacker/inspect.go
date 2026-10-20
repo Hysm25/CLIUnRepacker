@@ -86,7 +86,9 @@ func InspectRepack(repackDir string) {
 
 	// Platform Compatibility Analysis
 	fmt.Printf("\n  %sPlatform Compatibility & Limitations:%s\n", ui.Bold, ui.Reset)
-	fmt.Printf("    • %sNative Linux (No Wine):%s innoextract for setup container, native Go MD5 verifier\n", ui.Green, ui.Reset)
+	fmt.Printf("    • %sNative Linux & Termux:%s  innoextract for setup container, native Go MD5 verifier (100%% native Go)\n", ui.Green, ui.Reset)
+	fmt.Printf("    • %sTermux on Android:%s      Runs natively on ARM64; container extract & verify need zero emulation;\n", ui.Cyan, ui.Reset)
+	fmt.Printf("                                LOLZ/Razor stream decompression requires Box64 + Wine.\n")
 	fmt.Printf("    • %sWine Requirement:%s       LOLZ and Razor decompressors are closed-source Windows PE binaries;\n", ui.Yellow, ui.Reset)
 	fmt.Printf("                                100%% native Linux extraction without Wine is impossible for these streams.\n")
 	fmt.Printf("    • %s2 GB RAM Limit:%s         Enforced via CLS.ini (512MB SREP, 1024MB LOLZ) & prlimit memory ceiling\n", ui.Green, ui.Reset)

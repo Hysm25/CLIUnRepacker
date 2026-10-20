@@ -163,7 +163,13 @@ func showSystemDiagnostics(repackDir string) {
 
 	sysInfo := system.RunSystemCheck()
 
-	fmt.Printf("  %sOperating System:%s   %s (%s)\n", Dim, Reset, sysInfo.OS, sysInfo.Arch)
+	osDesc := fmt.Sprintf("%s (%s)", sysInfo.OS, sysInfo.Arch)
+	if sysInfo.IsTermux {
+		osDesc = fmt.Sprintf("%s (%s) [Termux on Android]", sysInfo.OS, sysInfo.Arch)
+	} else if sysInfo.IsAndroid {
+		osDesc = fmt.Sprintf("%s (%s) [Android]", sysInfo.OS, sysInfo.Arch)
+	}
+	fmt.Printf("  %sOperating System:%s   %s\n", Dim, Reset, osDesc)
 	if sysInfo.MemTotalGB > 0 {
 		fmt.Printf("  %sHost Memory:%s        %.2f GB total (%.2f GB available)\n",
 			Dim, Reset, sysInfo.MemTotalGB, sysInfo.MemAvailGB)
@@ -171,13 +177,19 @@ func showSystemDiagnostics(repackDir string) {
 
 	if sysInfo.Wine != "" {
 		fmt.Printf("  %sWine Compatibility:%s %s%s%s (Ready)\n", Dim, Reset, Green, sysInfo.Wine, Reset)
+	} else if sysInfo.IsTermux {
+		fmt.Printf("  %sWine Compatibility:%s %sNot found in PATH%s (Requires Box64 + Wine in PRoot/Mobox for x86 unpack)\n",
+			Dim, Reset, Yellow, Reset)
 	} else if sysInfo.OS != "windows" {
 		fmt.Printf("  %sWine Compatibility:%s %sNot found in PATH%s (Required for unpack on Linux/macOS)\n",
 			Dim, Reset, Yellow, Reset)
 	}
 
 	if sysInfo.Innoextract != "" {
-		fmt.Printf("  %sInnoextract Tool:%s   %s%s%s (Available - Native Linux Extraction)\n", Dim, Reset, Green, sysInfo.Innoextract, Reset)
+		fmt.Printf("  %sInnoextract Tool:%s   %s%s%s (Available - Native Extraction)\n", Dim, Reset, Green, sysInfo.Innoextract, Reset)
+	} else if sysInfo.IsTermux {
+		fmt.Printf("  %sInnoextract Tool:%s   %sNot found%s (Install via: pkg install innoextract)\n",
+			Dim, Reset, Yellow, Reset)
 	} else {
 		fmt.Printf("  %sInnoextract Tool:%s   %sNot found%s (Optional for container inspection)\n",
 			Dim, Reset, Dim, Reset)

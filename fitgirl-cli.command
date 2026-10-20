@@ -11,24 +11,37 @@ cd "$SCRIPT_DIR"
 printf "\033]0;FitGirl Repack CLI (Go)\007"
 
 ARCH="$(uname -m)"
+case "$ARCH" in
+    arm64|aarch64)
+        GOARCH="arm64"
+        ;;
+    *)
+        GOARCH="amd64"
+        ;;
+esac
+
+DIST_BIN="$SCRIPT_DIR/dist/fitgirl-cli-darwin-${GOARCH}"
 BIN=""
 
-if [ -x "$SCRIPT_DIR/fitgirl-cli" ]; then
+if [ -f "$DIST_BIN" ] && [ ! -x "$DIST_BIN" ]; then
+    chmod +x "$DIST_BIN" 2>/dev/null || true
+fi
+
+if [ -x "$DIST_BIN" ]; then
+    BIN="$DIST_BIN"
+elif [ -x "$SCRIPT_DIR/fitgirl-cli" ]; then
     BIN="$SCRIPT_DIR/fitgirl-cli"
-elif [ "$ARCH" = "arm64" ] && [ -x "$SCRIPT_DIR/dist/fitgirl-cli-darwin-arm64" ]; then
-    BIN="$SCRIPT_DIR/dist/fitgirl-cli-darwin-arm64"
-elif [ -x "$SCRIPT_DIR/dist/fitgirl-cli-darwin-amd64" ]; then
-    BIN="$SCRIPT_DIR/dist/fitgirl-cli-darwin-amd64"
 elif command -v go >/dev/null 2>&1; then
-    echo "Compiling fitgirl-cli for macOS..."
-    go build -ldflags="-s -w" -o "$SCRIPT_DIR/fitgirl-cli" .
-    BIN="$SCRIPT_DIR/fitgirl-cli"
+    echo "Compiling fitgirl-cli for macOS (${GOARCH})..."
+    mkdir -p "$SCRIPT_DIR/dist"
+    CGO_ENABLED=0 go build -ldflags="-s -w" -o "$DIST_BIN" .
+    BIN="$DIST_BIN"
 fi
 
 if [ -z "$BIN" ]; then
     echo "=================================================================="
     echo " Error: fitgirl-cli binary not found."
-    echo " Please compile it with: go build -o fitgirl-cli ."
+    echo " Please compile it with: ./build.sh or go build -o dist/fitgirl-cli-darwin-${GOARCH} ."
     echo "=================================================================="
     echo
     read -n 1 -s -r -p "Press any key to close..."
